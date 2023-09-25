@@ -1,29 +1,32 @@
 pipeline {
-    agent {
-        docker {
-            image 'maven:3.9.0'
-            args '-v /root/.m2:/root/.m2'
-        }
-    }
+    agent none
+    
     stages {
-        stage('Build') {
+        stage('Compile on Slave 1') {
+            agent { label 'slave1' }
             steps {
-                sh 'mvn -B -DskipTests clean package'
+                sh 'mvn clean compile'
             }
         }
-        stage('Test') {
+        
+        stage('Compile on Slave 2') {
+            agent { label 'slave2' }
+            steps {
+                sh 'mvn clean compile'
+            }
+        }
+        
+        stage('Test on Slave 1') {
+            agent { label 'slave1' }
             steps {
                 sh 'mvn test'
             }
-            post {
-                always {
-                    junit 'target/surefire-reports/*.xml'
-                }
-            }
         }
-        stage('Deliver') {
+        
+        stage('Test on Slave 2') {
+            agent { label 'slave2' }
             steps {
-                sh './jenkins/scripts/deliver.sh'
+                sh 'mvn test'
             }
         }
     }
